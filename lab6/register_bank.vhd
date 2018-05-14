@@ -66,7 +66,7 @@ begin
   decode1: dec3_to_8 PORT MAP (r2d, reg_rd);
   
   -- throw data to data_out
-  zbuffer: zbuffer PORT MAP (temp, r2d(0), data_out);
+  zbuffer0: zbuffer PORT MAP (temp, r2d(0), data_out);
   zbuffer1: zbuffer PORT MAP (temp, r2d(1), data_out);
   zbuffer2: zbuffer PORT MAP (temp, r2d(2), data_out);
   zbuffer3: zbuffer PORT MAP (temp, r2d(3), data_out);
