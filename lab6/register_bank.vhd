@@ -63,16 +63,16 @@ begin
   reg7: reg PORT MAP (clk, data_in, temp, d2r(7), clear);
   
   -- choose register to throw data into data_out
-  satanas1: dec3_to_8 PORT MAP (r2d, reg_rd);
+  decode1: dec3_to_8 PORT MAP (r2d, reg_rd);
   
   -- throw data to data_out
-  statanas0: zbuffer PORT MAP (temp, r2d(0), data_out);
-  statanas1: zbuffer PORT MAP (temp, r2d(1), data_out);
-  statanas2: zbuffer PORT MAP (temp, r2d(2), data_out);
-  statanas3: zbuffer PORT MAP (temp, r2d(3), data_out);
-  statanas4: zbuffer PORT MAP (temp, r2d(4), data_out);
-  statanas5: zbuffer PORT MAP (temp, r2d(5), data_out);
-  statanas6: zbuffer PORT MAP (temp, r2d(6), data_out);
+  zbuffer: zbuffer PORT MAP (temp, r2d(0), data_out);
+  zbuffer1: zbuffer PORT MAP (temp, r2d(1), data_out);
+  zbuffer2: zbuffer PORT MAP (temp, r2d(2), data_out);
+  zbuffer3: zbuffer PORT MAP (temp, r2d(3), data_out);
+  zbuffer4: zbuffer PORT MAP (temp, r2d(4), data_out);
+  zbuffer5: zbuffer PORT MAP (temp, r2d(5), data_out);
+  zbuffer6: zbuffer PORT MAP (temp, r2d(6), data_out);
   statanas7: zbuffer PORT MAP (temp, r2d(7), data_out);
   
   
