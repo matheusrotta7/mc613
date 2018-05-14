@@ -73,7 +73,7 @@ begin
   zbuffer4: zbuffer PORT MAP (temp, r2d(4), data_out);
   zbuffer5: zbuffer PORT MAP (temp, r2d(5), data_out);
   zbuffer6: zbuffer PORT MAP (temp, r2d(6), data_out);
-  statanas7: zbuffer PORT MAP (temp, r2d(7), data_out);
+  zbuffer7: zbuffer PORT MAP (temp, r2d(7), data_out);
   
   
 end structural;
