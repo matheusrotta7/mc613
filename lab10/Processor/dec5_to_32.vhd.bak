@@ -1,0 +1,24 @@
+LIBRARY ieee;
+USE ieee.std_logic_1164.all;
+USE ieee.numeric_std.all;
+
+entity dec5_to_32 is
+	port (
+		result : out std_logic_vector (31 downto 0);
+		n		: in std_logic_vector (4 downto 0)
+		);
+end dec5_to_32;
+
+architecture behavioral of dec5_to_32 is 
+
+signal zeros : std_logic_vector (31 downto 0);
+
+begin
+	
+	zeros <= "00000000000000000000000000000000";
+	zeros(31 - TO_INTEGER(UNSIGNED(n))) <= '1';
+	result <= zeros;
+	
+		
+		
+end behavioral;

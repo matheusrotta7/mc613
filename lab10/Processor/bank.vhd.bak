@@ -1,0 +1,97 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+
+entity bank is
+  GENERIC (
+			WORDSIZE : NATURAL := 32
+		);
+		PORT (
+			WR_EN, RD_EN,
+			clear,
+			clock		: IN 	STD_LOGIC;
+			WR_ADDR,
+			RD_ADDR1,
+			RD_ADDR2	: IN	STD_LOGIC_VECTOR (4 DOWNTO 0);
+			DATA_IN		: IN	STD_LOGIC_VECTOR (WORDSIZE-1 DOWNTO 0);
+			DATA_OUT1,
+			DATA_OUT2	: OUT	STD_LOGIC_VECTOR (WORDSIZE-1 DOWNTO 0)
+		);
+end bank;
+
+architecture structural of register_bank is
+
+component dec3_to_8 
+	port (
+		panda : out std_logic_vector (7 downto 0);
+		q		: in std_logic_vector (2 downto 0)
+		);
+end component dec3_to_8;
+
+component zbuffer 
+	generic ( N : INTEGER := 4 ) ;
+	port (X : in STD_LOGIC_VECTOR(N-1 downto 0) ;
+			E : in STD_LOGIC ;
+			F : out STD_LOGIC_VECTOR(N-1 downto 0) ) ;
+end component zbuffer ;
+
+component reg 
+  generic (
+    N : integer := 4
+  );
+  port (
+    clk : in std_logic;
+    data_in : in std_logic_vector(N-1 downto 0);
+    data_out : out std_logic_vector(N-1 downto 0);
+    load : in std_logic; -- Write enable
+    clear : in std_logic
+  );
+end component reg;
+
+
+signal  d2r : std_logic_vector (7 downto 0);
+signal  r2d_1 : std_logic_vector (7 downto 0);
+signal  r2d_2 : std_logic_vector (7 downto 0);
+signal temp : std_logic_vector (3 downto 0);
+begin
+  -- Your code here!
+  
+  -- choose register to write data
+  stage0: dec3_to_8 PORT MAP (d2r, WR_ADDR);
+  
+  -- write data
+  reg0: reg PORT MAP (clk, data_in, temp, d2r(0), clear);
+  reg1: reg PORT MAP (clk, data_in, temp, d2r(1), clear);
+  reg2: reg PORT MAP (clk, data_in, temp, d2r(2), clear);
+  reg3: reg PORT MAP (clk, data_in, temp, d2r(3), clear);
+  reg4: reg PORT MAP (clk, data_in, temp, d2r(4), clear);
+  reg5: reg PORT MAP (clk, data_in, temp, d2r(5), clear);
+  reg6: reg PORT MAP (clk, data_in, temp, d2r(6), clear);
+  reg7: reg PORT MAP (clk, data_in, temp, d2r(7), clear);
+  
+  -- choose register to read data into data_out
+  decode1: dec3_to_8 PORT MAP (r2d_1, RD_ADDR1);
+  decode2: dec3_to_8 PORT MAP (r2d_2, RD_ADDR2);
+  
+  -- throw data to data_out1
+  zbuff0: zbuffer PORT MAP (temp, r2d_1(0), DATA_OUT1);
+  zbuff1: zbuffer PORT MAP (temp, r2d_1(1), DATA_OUT1);
+  zbuff2: zbuffer PORT MAP (temp, r2d_1(2), DATA_OUT1);
+  zbuff3: zbuffer PORT MAP (temp, r2d_1(3), DATA_OUT1);
+  zbuff4: zbuffer PORT MAP (temp, r2d_1(4), DATA_OUT1);
+  zbuff5: zbuffer PORT MAP (temp, r2d_1(5), DATA_OUT1);
+  zbuff6: zbuffer PORT MAP (temp, r2d_1(6), DATA_OUT1);
+  zbuff7: zbuffer PORT MAP (temp, r2d_1(7), DATA_OUT1);
+  
+  -- throw data to data_out
+  zbuff0: zbuffer PORT MAP (temp, r2d_2(0), DATA_OUT2);
+  zbuff1: zbuffer PORT MAP (temp, r2d_2(1), DATA_OUT2);
+  zbuff2: zbuffer PORT MAP (temp, r2d_2(2), DATA_OUT2);
+  zbuff3: zbuffer PORT MAP (temp, r2d_2(3), DATA_OUT2);
+  zbuff4: zbuffer PORT MAP (temp, r2d_2(4), DATA_OUT2);
+  zbuff5: zbuffer PORT MAP (temp, r2d_2(5), DATA_OUT2);
+  zbuff6: zbuffer PORT MAP (temp, r2d_2(6), DATA_OUT2);
+  zbuff7: zbuffer PORT MAP (temp, r2d_2(7), DATA_OUT2);
+  
+  
+end structural;
