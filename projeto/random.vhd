@@ -1,32 +1,42 @@
-library ieee;
-use ieee.math_real.all;
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
 
 entity random is
+Port ( clock : in STD_LOGIC;
+       reset : in STD_LOGIC;
+       en : in STD_LOGIC;
+       Q : out STD_LOGIC_VECTOR (7 downto 0);
+       check: out STD_LOGIC);
 
-port 
-	(
-		Clock : in std_logic;
-		bomb_site : out natural range 0 to 99;
-		
-		
-	);
-
+--       constant seed: STD_LOGIC_VECTOR(7 downto 0) := "00000001";
 end random;
 
-architecture behavior of random is 
+architecture Behavioral of random is
 
-signal rand_num : integer := 0;
+--signal temp: STD_LOGIC;
+signal Qt: STD_LOGIC_VECTOR(7 downto 0) := x"01";
 
 begin
 
-process (Clock)
-    variable seed1, seed2: positive;               -- seed values for random generator
-    variable rand: real;   -- random real-number value in range 0 to 1.0  
-    variable range_of_rand : real := 99.0;    -- the range of random values created will be 0 to +99.
-begin
-    uniform(seed1, seed2, rand);   -- generate random number
-    rand_num <= integer(rand*range_of_rand);  -- rescale to 0..99, convert integer part 
-    wait for 10 ns;
-end process;
+PROCESS(clock)
+variable tmp : STD_LOGIC := '0';
+BEGIN
 
-end behavior;
+IF rising_edge(clock) THEN
+   IF (reset='1') THEN
+   -- credit to QuantumRipple for pointing out that this should not
+   -- be reset to all 0's, as you will enter an invalid state
+      Qt <= x"01"; 
+   --ELSE Qt <= seed;
+   ELSIF en = '1' THEN
+      tmp := Qt(4) XOR Qt(3) XOR Qt(2) XOR Qt(0);
+      Qt <= tmp & Qt(7 downto 1);
+   END IF;
+
+END IF;
+END PROCESS;
+-- check <= temp;
+check <= Qt(7);
+Q <= Qt;
+
+end Behavioral;

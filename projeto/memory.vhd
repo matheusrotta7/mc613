@@ -10,16 +10,10 @@ use ieee.std_logic_1164.all;
 
 entity memory is
 
-	--generic 
-	--(
-	--	DATA_WIDTH : natural := 6;
-	--	ADDR_WIDTH : natural := 7
-	--);
-
 	port 
 	(
 		Clock : in std_logic;
-		Address : in natural range 0 to 99;
+		Address : in integer range 0 to 99;
 		Data : in std_logic_vector(5 downto 0);
 		Q : out std_logic_vector(5 downto 0);
 		WrEn : in std_logic
@@ -37,7 +31,7 @@ architecture direct of memory is
 	signal ram : memory_t;
 
 	-- Register to hold the address 
-	signal addr_reg : natural range 0 to 99;
+	signal addr_reg : integer range 0 to 99;
 	
 	signal read : std_logic_vector(5 downto 0);
 
