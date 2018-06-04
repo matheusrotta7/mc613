@@ -1,8 +1,14 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use ieee.numeric_std.all;
+
+
 entity populate_minefield is
 	
 	port
 	(
-		
+			clock : in std_logic;
+			bs    : out integer range 0 to 63
 	);
 end populate_minefield;
 
@@ -26,39 +32,24 @@ component memory is
 	port 
 	(
 		Clock : in std_logic;
-		Address : in integer range 0 to 99;
-		Data : in std_logic_vector(5 downto 0);
-		Q : out std_logic_vector(5 downto 0);
+		Address : in integer range 0 to 63;
+		Data : in std_logic_vector(6 downto 0);
+		Q : out std_logic_vector(6 downto 0);
 		WrEn : in std_logic
 	);
 
 end component memory;
 
 
-subtype word_t is std_logic_vector(7 downto 0);
-type table is array(19 downto 0) of word_t;
-type rand_ints is array(19 downto 0) of integer range 0 to 99;
-
-		
-signal aux : table;
-
-
+--signal count : integer range 0 to 9;
+signal rand_vector : std_logic_vector (7 downto 0);
+signal bomb_site : integer range 0 to 63;
 
 begin
 
-	stage0: memory
+random0: random port map (clock, '0', '1', rand_vector, open);
+bomb_site <= to_integer(unsigned(rand_vector(7 downto 2)));
 
-	GEN_RANDOM:	
-	for i in 0 to 19 generate
-      randomx : random port map(clk, '0', '1', aux(i), open);
-		rand_ints(i) <= integer(aux(7 downto 1)) mod 100;
-		
-   end generate GEN_RANDOM;
-	
-	
-	
-	
-
-	
+memory0: memory port map (clock, bomb_site, "0100000", open, '1');
 
 end behavior;

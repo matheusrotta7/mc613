@@ -13,9 +13,9 @@ entity memory is
 	port 
 	(
 		Clock : in std_logic;
-		Address : in integer range 0 to 99;
-		Data : in std_logic_vector(5 downto 0);
-		Q : out std_logic_vector(5 downto 0);
+		Address : in integer range 0 to 63;
+		Data : in std_logic_vector(6 downto 0);
+		Q : out std_logic_vector(6 downto 0);
 		WrEn : in std_logic
 	);
 
@@ -24,16 +24,16 @@ end memory;
 architecture direct of memory is
 
 	-- Build a 2-D array type for the RAM
-	subtype word_t is std_logic_vector(5 downto 0);
-	type memory_t is array(99 downto 0) of word_t;
+	subtype word_t is std_logic_vector(6 downto 0);
+	type memory_t is array(63 downto 0) of word_t;
 
 	-- Declare the RAM signal.	
 	signal ram : memory_t;
 
 	-- Register to hold the address 
-	signal addr_reg : integer range 0 to 99;
+	signal addr_reg : integer range 0 to 63;
 	
-	signal read : std_logic_vector(5 downto 0);
+	signal read : std_logic_vector(6 downto 0);
 
 begin
 
