@@ -8,7 +8,9 @@ entity populate_minefield is
 	port
 	(
 			clock : in std_logic;
-			bs    : out integer range 0 to 63
+			reset : in std_logic;
+			bs    : out std_logic_vector(5 downto 0);
+			kg    : out std_logic
 	);
 end populate_minefield;
 
@@ -40,16 +42,35 @@ component memory is
 
 end component memory;
 
+component populate_minefield_count is
+	
+	port
+	(
+		reset : in std_logic;
+		clock : in std_logic;
+		keep_going : out std_logic
+	);
+end component populate_minefield_count;
+
 
 --signal count : integer range 0 to 9;
 signal rand_vector : std_logic_vector (7 downto 0);
 signal bomb_site : integer range 0 to 63;
+signal keep_going : std_logic;
+signal go : std_logic;
 
 begin
 
-random0: random port map (clock, '0', '1', rand_vector, open);
+count0: populate_minefield_count port map (reset, clock, keep_going);
+
+go <= clock and keep_going;
+
+random0: random port map (go, '0', '1', rand_vector, open);
 bomb_site <= to_integer(unsigned(rand_vector(7 downto 2)));
 
-memory0: memory port map (clock, bomb_site, "0100000", open, '1');
+memory0: memory port map (go, bomb_site, "0100000", open, '1');
+
+bs <= rand_vector(7 downto 2);
+kg <= keep_going;
 
 end behavior;
