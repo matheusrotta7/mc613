@@ -39,6 +39,7 @@ signal current_bomb : integer range 0 to 63;
 signal current_visit : integer range -1 to 63;
 signal clock_64 : std_logic;
 signal done_counting : std_logic;
+signal new_data : std_logic_vector (6 downto 0);
 
 component memory is
 
@@ -88,6 +89,19 @@ component mod64 is
 			);
 end component mod64;
 
+component count_mines is
+	
+	port
+	(
+		clock : in std_logic;
+		clock64 : in std_logic;
+		read_data : in std_logic_vector (6 downto 0);
+		new_data : out std_logic_vector (6 downto 0)
+	);
+	
+end component count_mines;
+
+
 	
 	
 
@@ -104,7 +118,7 @@ begin
 	
 	md64: mod64 port map (clock_64, current_bomb, done_counting);
 	
-	cm: count_mines port map (clock, clock64, read_data, new_data);
+	cm: count_mines port map (clock, clock_64, read_data, new_data);
 	
 	
 	
@@ -150,7 +164,7 @@ begin
 					end if;
 				when E => 
 					bomb_site <= current_visit;
-					if clock64 = '1' then
+					if clock_64 = '1' then
 						write_data <= new_data; --atualizada com o número de bombas
 						write_on_memory <= '1';
 					else
@@ -160,6 +174,7 @@ begin
 						y <= B;
 					else
 						y <= E;
+					end if;
 			end case;
 		end if;
 	end process;
