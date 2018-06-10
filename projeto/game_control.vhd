@@ -6,8 +6,17 @@ entity game_control is
 	
 	port
 	(
-		clock : std_logic;
-		reset : std_logic
+--		reset : in std_logic;
+		sw								: in std_logic_vector(9 downto 0);
+		ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
+    CLOCK_50                  : in  std_logic;
+    KEY                       : in  std_logic_vector(3 downto 0);
+    VGA_R, VGA_G, VGA_B       : out std_logic_vector(7 downto 0);
+    VGA_HS, VGA_VS            : out std_logic;
+    VGA_BLANK_N, VGA_SYNC_N   : out std_logic;
+    VGA_CLK                   : out std_logic;
+	 ps2_dat 						:		inout	std_logic;	--	ps2 data
+		ps2_clk						:		inout	std_logic		--	ps2 clock
 	);
 end game_control;
 
@@ -40,6 +49,8 @@ signal current_visit : integer range -1 to 63;
 signal clock_64 : std_logic;
 signal done_counting : std_logic;
 signal new_data : std_logic_vector (6 downto 0);
+signal vga_address : integer range 0 to 63;
+signal reset : std_logic;
 
 component memory is
 
@@ -101,33 +112,56 @@ component count_mines is
 	
 end component count_mines;
 
+component vga_ball is
+  port (    
+	memo_word					: in std_logic_vector(6 downto 0);
+	memo_address						: out integer range 0 to 63;
+	sw								: in std_logic_vector(9 downto 0);
+		ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
+    CLOCK_50                  : in  std_logic;
+    KEY                       : in  std_logic_vector(3 downto 0);
+    VGA_R, VGA_G, VGA_B       : out std_logic_vector(7 downto 0);
+    VGA_HS, VGA_VS            : out std_logic;
+    VGA_BLANK_N, VGA_SYNC_N   : out std_logic;
+    VGA_CLK                   : out std_logic;
+	 ps2_dat 						:		inout	std_logic;	--	ps2 data
+		ps2_clk						:		inout	std_logic		--	ps2 clock
+    );
+end component vga_ball;
 
 	
 	
 
 begin
+
+	reset <=  KEY(1);
 	
-	go <= clock and keep_going;
+	go <= CLOCK_50 and keep_going;
+	
 	count0: populate_minefield_count port map (reset, go, keep_going);
 	acabou_gera_campo <= not keep_going;
+	
 	random0: random port map (go, '0', '1', rand_vector, open);
 	
-	memory0: memory port map (clock, bomb_site, write_data, read_data, write_on_memory);
+	memory0: memory port map (CLOCK_50, bomb_site, write_data, read_data, write_on_memory);
 
-	md8: mod8 port map (clock, current_bomb, current_visit, clock_64);
+	md8: mod8 port map (CLOCK_50, current_bomb, current_visit, clock_64);
 	
 	md64: mod64 port map (clock_64, current_bomb, done_counting);
 	
-	cm: count_mines port map (clock, clock_64, read_data, new_data);
+	cm: count_mines port map (CLOCK_50, clock_64, read_data, new_data);
+	
+	vga0: vga_ball port map (read_data, vga_address, sw, ledr, CLOCK_50, KEY, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N, VGA_CLK, ps2_dat, ps2_clk);
+	
 	
 	
 	
 	state_machine:
-	process (reset, clock)
+	process (reset, CLOCK_50)
 	begin
 		if reset = '1' then
 			y <= A;
-		elsif (clock'event and clock = '1') then
+		elsif (CLOCK_50'event and CLOCK_50 = '1') then
 			case y is
 				when A =>
 					bomb_site <= to_integer(unsigned(rand_vector(7 downto 2)));
@@ -141,6 +175,9 @@ begin
 					end if;
 				when B =>
 					pm_enable <= '0';
+					write_on_memory <= '0';
+					bomb_site <= vga_address;
+					
 					if game_over = '0' then
 						y <= B;
 					elsif  game_over = '1' and won = '0' then
@@ -150,12 +187,14 @@ begin
 					end if;
 				when C =>
 					pm_enable <= '0';
+					write_on_memory <= '0';
 					if restart = '0' then
 						y <= C;
 					else 
 						y <= A;
 					end if;
 				when D =>
+					write_on_memory <= '0';
 					pm_enable <= '0';
 					if restart = '0' then
 						y <= D;
