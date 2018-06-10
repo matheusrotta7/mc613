@@ -60,7 +60,7 @@ architecture struct of ps2_mouse_data is
 	signal block_x : std_logic_vector(3 downto 0);
 	signal block_y : std_logic_vector(3 downto 0);
 	
-	constant SENSIBILITY : integer := 32; -- Rise to decrease sensibility
+	constant SENSIBILITY : integer := 8; -- Rise to decrease sensibility
 begin 
 	-- KEY(0) Reset
 	resetn <= KEY(0);

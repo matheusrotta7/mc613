@@ -62,8 +62,8 @@ architecture comportamento of vga_ball is
   signal line : integer range 0 to 95;  -- linha atual
   signal col : integer range 0 to 127;  -- coluna atual
   
-  signal i	: integer range 0 to 7;
-  signal j 	: integer range 0 to 7;
+  signal i	: integer range 0 to 8;
+  signal j 	: integer range 0 to 8;
 
   signal col_rstn : std_logic;          -- reset do contador de colunas
   signal col_enable : std_logic;        -- enable do contador de colunas
@@ -270,10 +270,15 @@ begin  -- comportamento
       if (col >= 30 and col <= 78 and line >= 10 and line <= 74) then
 			if (line rem 8 = 2 or col rem 6 = 0 ) then
 				
-				im :=  (to_integer(unsigned(new_mouse_data(7 downto 0))) - 10 ) / 8;
-				jm :=  (to_integer(unsigned(new_mouse_data(15 downto 8))) - 30 ) / 6;
+--				im :=  (to_integer(unsigned(new_mouse_data(7 downto 0))) - 10 ) / 8;
+--				jm :=  (to_integer(unsigned(new_mouse_data(15 downto 8))) - 30 ) / 6;
 				
-				if (im = i and jm =j) then
+				
+				im :=  to_integer(unsigned(new_mouse_data(7 downto 0))) / 16;
+				jm :=  to_integer(unsigned(new_mouse_data(15 downto 8))) / 16;
+				
+				
+				if (im = i and jm = j) then
 					-- mouse no msm quadradinho que o pixel
 					color <= "010"; -- verde
 					
@@ -282,7 +287,7 @@ begin  -- comportamento
 					yaux := im * 8 + 17;
 					
 					if((xaux = col-1) or yaux = line-1) then
-						color <= "100"; -- verde
+						color <= "010"; -- vermelho
 					else
 						color <= "000";
 					end if;
