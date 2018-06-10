@@ -31,12 +31,16 @@ use ieee.numeric_std.all;
 
 entity vga_ball is
   port (    
+	sw								: in std_logic_vector(9 downto 0);
+		ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
     CLOCK_50                  : in  std_logic;
-    KEY                       : in  std_logic_vector(0 downto 0);
+    KEY                       : in  std_logic_vector(3 downto 0);
     VGA_R, VGA_G, VGA_B       : out std_logic_vector(7 downto 0);
     VGA_HS, VGA_VS            : out std_logic;
     VGA_BLANK_N, VGA_SYNC_N   : out std_logic;
-    VGA_CLK                   : out std_logic
+    VGA_CLK                   : out std_logic;
+	 ps2_dat 						:		inout	std_logic;	--	ps2 data
+		ps2_clk						:		inout	std_logic		--	ps2 clock
     );
 end vga_ball;
 
@@ -57,6 +61,9 @@ architecture comportamento of vga_ball is
   
   signal line : integer range 0 to 95;  -- linha atual
   signal col : integer range 0 to 127;  -- coluna atual
+  
+  signal i	: integer range 0 to 7;
+  signal j 	: integer range 0 to 7;
 
   signal col_rstn : std_logic;          -- reset do contador de colunas
   signal col_enable : std_logic;        -- enable do contador de colunas
@@ -93,6 +100,41 @@ architecture comportamento of vga_ball is
   signal sync, blank: std_logic;
   
   signal color : std_logic_vector(2 downto 0);
+  
+  signal write_ram : std_logic;
+  signal address 		: std_logic_vector (5 downto 0);
+  signal datain		: std_logic_vector (7 downto 0);
+  signal dataout		: std_logic_vector (7 downto 0);
+  
+	signal click : std_logic_vector (2 downto 0);
+	signal new_mouse_data : std_logic_vector (15 downto 0);
+	signal mouse_data : std_logic_vector (15 downto 0);
+	
+--	signal im	: integer range 0 to 7;
+--	signal jm 	: integer range 0 to 7;
+  
+  component ps2_mouse_data is
+		port
+		(
+			clock_50	: 	in	std_logic;											--	50 mhz
+			key 	:		in	std_logic_vector (3 downto 0);		--	pushbutton[3:0]
+			sw 	:		in	std_logic_vector (9 downto 0);			--	toggle switch[9:0]
+			click	:		out std_logic_vector (2 downto 0);
+			data	:		out std_logic_vector (15 downto 0);
+			ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
+			ps2_dat 	:		inout	std_logic;	--	ps2 data
+			ps2_clk		:		inout	std_logic		--	ps2 clock
+		);
+	end component;
+	component sync_ram is
+	  port (
+		 clock   : in  std_logic;
+		 we      : in  std_logic;
+		 address : in  std_logic_vector (5 downto 0);
+		 datain  : in  std_logic_vector (7 downto 0);
+		 dataout : out std_logic_vector (7 downto 0)
+	  );
+	end component;
 
 begin  -- comportamento
 
@@ -144,6 +186,7 @@ begin  -- comportamento
         end if;
       end if;
     end if;
+	 j <= (col - 30) / 6;
   end process conta_coluna;
     
   -- purpose: Este processo conta o número da linha atual, quando habilitado
@@ -166,6 +209,7 @@ begin  -- comportamento
         end if;        
       end if;
     end if;
+	 i <= (line -10) / 8;
   end process conta_linha;
 
   -- Este sinal é útil para informar nossa lógica de controle quando
@@ -177,43 +221,133 @@ begin  -- comportamento
 					  
 					  
 					  
-  muda_cor: process (CLOCK_50)
-    type direcao_h is (direita, esquerda);
-	 type direcao_v is (desce, sobe);
-    variable direcao_y : direcao_v := sobe;
-	 variable direcao_x : direcao_h := direita;
-	 variable cor : integer range 1 to 7;
-  begin  -- process p_atualiza_pos_x
-    if CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
-      if atualiza_pos_x = '1' then
-        if direcao_x = direita then         
-          if pos_x = 127 then
-				direcao_x := esquerda; 
-            cor := cor + 1;
-          end if;        
-        else
-          if pos_x = 0 then
-				direcao_x := direita;
-            cor := cor + 1;
-          end if;
-        end if;
-      elsif atualiza_pos_y = '1' then
-        if direcao_y = desce then         
-          if pos_y = 95 then
-				direcao_y := sobe;  
-            cor := cor + 1;
-          end if;        
-        else  -- se a direcao é para subir
-          if pos_y = 0 then
-				direcao_y := desce;
-            cor := cor + 1;
-          end if;
-        end if;
-      end if;
+					  
+					  
+					  
+  -----------------------------------------------------------------------------
+  -- Brilho do pixel
+  -----------------------------------------------------------------------------
+  -- O brilho do pixel é branco quando os contadores de linha e coluna, que
+  -- indicam o endereço do pixel sendo escrito para o quadro atual, casam com a
+  -- posição da bola (sinais pos_x e pos_y). Caso contrário,
+  -- o pixel é preto.
+
+--  pixel_bit <= '1' when (col = pos_x) and (line = pos_y) else '0';
+--  pixel <= '1' when (col = pos_x) and (line = pos_y) else '0';
+  
+	pixel <= color;
+--  pixel <= color when (col = pos_x) and (line = pos_y) else "000";
+--  we <= '1' when (col = pos_x) and (line = pos_y) and (estado = constroi_quadro) else '0';
+--  pixel <= (others => pixel_bit);
+  
+  
+  
+  -- O endereço de memória pode ser construído com essa fórmula simples,
+  -- a partir da linha e coluna atual
+  
+  mouse_action:
+	ps2_mouse_data port map ( CLOCK_50, KEY(3 downto 0), sw, click, new_mouse_data, ledr, ps2_dat, ps2_clk );
+
+--	im <=  (to_integer(unsigned(new_mouse_data(7 downto 0))) - 10 ) / 8;
+--	jm <=  (to_integer(unsigned(new_mouse_data(15 downto 8))) - 30 ) / 6;
+	
+--	address <= std_logic_vector(to_unsigned(im*8 + jm ,6));
+	
+--	y_a := std_logic_vector(to_signed(to_integer(signed(y)) + ((yacc - to_integer(signed(dy))) / SENSIBILITY), 8));
+	
+--	ler_memo:
+--	sync_ram port map ( click(0), write_ram, address, datain, dataout);
+	
+	
+  tabuleiro: process (CLOCK_50)
+
+  variable xaux, yaux : integer :=0;
+  variable im, jm : integer := 0;
+  begin
+	if CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
+      -- o contador de linha só incrementa quando o contador de colunas
+      -- chegou ao fim (valor 127)
+      if (col >= 30 and col <= 78 and line >= 10 and line <= 74) then
+			if (line rem 8 = 2 or col rem 6 = 0 ) then
+				
+				im :=  (to_integer(unsigned(new_mouse_data(7 downto 0))) - 10 ) / 8;
+				jm :=  (to_integer(unsigned(new_mouse_data(15 downto 8))) - 30 ) / 6;
+				
+				if (im = i and jm =j) then
+					color <= "010"; -- verde
+				elsif (im = i - 1 or jm = j - 1) then
+					xaux := jm * 6 + 35;
+					yaux := im * 8 + 17;
+					
+					if((xaux = col-1) and ) or yaux = line-1) then
+						color <= "100"; -- verde
+					else
+						color <= "000";
+					end if;
+				else
+					color <= "000";
+				end if;
+			else
+				color <= "110";
+			end if;
+		else
+			color <= "000";
+		end if;
     end if;
-		
-		color <= std_logic_vector(to_unsigned(cor,3));
-  end process muda_cor;
+	 
+	 
+	
+  
+  end process tabuleiro;
+  
+  
+  addr  <= col + (128 * line);
+					  
+					  
+					  
+					  
+					  
+					  
+					  
+					  
+					  
+--  muda_cor: process (CLOCK_50)
+--    type direcao_h is (direita, esquerda);
+--	 type direcao_v is (desce, sobe);
+--    variable direcao_y : direcao_v := sobe;
+--	 variable direcao_x : direcao_h := direita;
+--	 variable cor : integer range 1 to 7;
+--  begin  -- process p_atualiza_pos_x
+--    if CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
+--      if atualiza_pos_x = '1' then
+--        if direcao_x = direita then         
+--          if pos_x = 127 then
+--				direcao_x := esquerda; 
+--            cor := cor + 1;
+--          end if;        
+--        else
+--          if pos_x = 0 then
+--				direcao_x := direita;
+--            cor := cor + 1;
+--          end if;
+--        end if;
+--      elsif atualiza_pos_y = '1' then
+--        if direcao_y = desce then         
+--          if pos_y = 95 then
+--				direcao_y := sobe;  
+--            cor := cor + 1;
+--          end if;        
+--        else  -- se a direcao é para subir
+--          if pos_y = 0 then
+--				direcao_y := desce;
+--            cor := cor + 1;
+--          end if;
+--        end if;
+--      end if;
+--    end if;
+--		
+--		color <= std_logic_vector(to_unsigned(cor,3));
+--  end process muda_cor;
   -----------------------------------------------------------------------------
   -- Abaixo estão processos relacionados com a atualização da posição da
   -- bola. Todos são controlados por sinais de enable de modo que a posição
@@ -226,61 +360,61 @@ begin  -- comportamento
   -- type   : sequential
   -- inputs : CLOCK_50, rstn
   -- outputs: pos_x
-  p_atualiza_pos_x: process (CLOCK_50, rstn)
-    type direcao_t is (direita, esquerda);
-    variable direcao : direcao_t := direita;
-  begin  -- process p_atualiza_pos_x
-    if rstn = '0' then                  -- asynchronous reset (active low)
-      pos_x <= 0;
-    elsif CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
-      if atualiza_pos_x = '1' then
-        if direcao = direita then         
-          if pos_x = 127 then
-            direcao := esquerda;  
-          else
-            pos_x <= pos_x + 1;
-          end if;        
-        else  -- se a direcao é esquerda
-          if pos_x = 0 then
-            direcao := direita;
-          else
-            pos_x <= pos_x - 1;
-          end if;
-        end if;
-      end if;
-    end if;
-  end process p_atualiza_pos_x;
+--  p_atualiza_pos_x: process (CLOCK_50, rstn)
+--    type direcao_t is (direita, esquerda);
+--    variable direcao : direcao_t := direita;
+--  begin  -- process p_atualiza_pos_x
+--    if rstn = '0' then                  -- asynchronous reset (active low)
+--      pos_x <= 0;
+--    elsif CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
+--      if atualiza_pos_x = '1' then
+--        if direcao = direita then         
+--          if pos_x = 127 then
+--            direcao := esquerda;  
+--          else
+--            pos_x <= pos_x + 1;
+--          end if;        
+--        else  -- se a direcao é esquerda
+--          if pos_x = 0 then
+--            direcao := direita;
+--          else
+--            pos_x <= pos_x - 1;
+--          end if;
+--        end if;
+--      end if;
+--    end if;
+--  end process p_atualiza_pos_x;
 
   -- purpose: Este processo irá atualizar a linha atual da bola,
   --          alterando sua posição no próximo quadro a ser desenhado.
   -- type   : sequential
   -- inputs : CLOCK_50, rstn
-  -- outputs: pos_y
-  p_atualiza_pos_y: process (CLOCK_50, rstn)
-    type direcao_t is (desce, sobe);
-    variable direcao : direcao_t := desce;
-  begin  -- process p_atualiza_pos_x
-    if rstn = '0' then                  -- asynchronous reset (active low)
-      pos_y <= 0;
-    elsif CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
-      if atualiza_pos_y = '1' then
-        if direcao = desce then         
-          if pos_y = 95 then
-            direcao := sobe;  
-          else
-            pos_y <= pos_y + 1;
-          end if;        
-        else  -- se a direcao é para subir
-          if pos_y = 0 then
-            direcao := desce;
-          else
-            pos_y <= pos_y - 1;
-          end if;
-        end if;
-      end if;
-    end if;
-  end process p_atualiza_pos_y;
-  
+--  -- outputs: pos_y
+--  p_atualiza_pos_y: process (CLOCK_50, rstn)
+--    type direcao_t is (desce, sobe);
+--    variable direcao : direcao_t := desce;
+--  begin  -- process p_atualiza_pos_x
+--    if rstn = '0' then                  -- asynchronous reset (active low)
+--      pos_y <= 0;
+--    elsif CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
+--      if atualiza_pos_y = '1' then
+--        if direcao = desce then         
+--          if pos_y = 95 then
+--            direcao := sobe;  
+--          else
+--            pos_y <= pos_y + 1;
+--          end if;        
+--        else  -- se a direcao é para subir
+--          if pos_y = 0 then
+--            direcao := desce;
+--          else
+--            pos_y <= pos_y - 1;
+--          end if;
+--        end if;
+--      end if;
+--    end if;
+--  end process p_atualiza_pos_y;
+--  
   
     -- purpose: Este processo irá atualizar a coluna atual da bola,
   --          alterando sua posição no próximo quadro a ser desenhado.
@@ -301,15 +435,15 @@ begin  -- comportamento
 --  pixel <= '1' when (col = pos_x) and (line = pos_y) else '0';
   
   
-  pixel <= color when (col = pos_x) and (line = pos_y) else "000";
-  we <= '1' when (col = pos_x) and (line = pos_y) and (estado = constroi_quadro) else '0';
+--  pixel <= color when (col = pos_x) and (line = pos_y) else "000";
+--  we <= '1' when (col = pos_x) and (line = pos_y) and (estado = constroi_quadro) else '0';
 --  pixel <= (others => pixel_bit);
   
   
   
   -- O endereço de memória pode ser construído com essa fórmula simples,
   -- a partir da linha e coluna atual
-  addr  <= col + (128 * line);
+--  addr  <= col + (128 * line);
 
   -----------------------------------------------------------------------------
   -- Processos que definem a FSM (finite state machine), nossa máquina
@@ -330,13 +464,11 @@ begin  -- comportamento
                              else
                                proximo_estado <= inicio;
                              end if;
-                             atualiza_pos_x <= '0';
-                             atualiza_pos_y <= '0';
                              line_rstn      <= '0';  -- reset é active low!
                              line_enable    <= '0';
                              col_rstn       <= '0';  -- reset é active low!
                              col_enable     <= '0';
---                             we             <= '0';
+                             we             <= '0';
                              timer_rstn     <= '1';  -- reset é active low!
                              timer_enable   <= '1';
 
@@ -345,35 +477,29 @@ begin  -- comportamento
                              else
                                proximo_estado <= constroi_quadro;
                              end if;
-                             atualiza_pos_x <= '0';
-                             atualiza_pos_y <= '0';
                              line_rstn      <= '1';
                              line_enable    <= '1';
                              col_rstn       <= '1';
                              col_enable     <= '1';
---                             we             <= '1';
+                             we             <= '1';
                              timer_rstn     <= '0'; 
                              timer_enable   <= '0';
 
       when move_bola      => proximo_estado <= inicio;
-                             atualiza_pos_x <= '1';
-                             atualiza_pos_y <= '1';
                              line_rstn      <= '1';
                              line_enable    <= '0';
                              col_rstn       <= '1';
                              col_enable     <= '0';
---                             we             <= '0';
+                             we             <= '1';
                              timer_rstn     <= '0'; 
                              timer_enable   <= '0';
 
       when others         => proximo_estado <= inicio;
-                             atualiza_pos_x <= '0';
-                             atualiza_pos_y <= '0';
                              line_rstn      <= '1';
                              line_enable    <= '0';
                              col_rstn       <= '1';
                              col_enable     <= '0';
---                             we             <= '0';
+                             we             <= '0';
                              timer_rstn     <= '1'; 
                              timer_enable   <= '0';
       
