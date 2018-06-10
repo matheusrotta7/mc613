@@ -31,6 +31,8 @@ use ieee.numeric_std.all;
 
 entity vga_ball is
   port (    
+	memo_word					: in std_logic_vector(6 downto 0);
+	address						: out integer range 0 to 63;
 	sw								: in std_logic_vector(9 downto 0);
 		ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
     CLOCK_50                  : in  std_logic;
@@ -280,14 +282,22 @@ begin  -- comportamento
 				
 				if (im = i and jm = j) then
 					-- mouse no msm quadradinho que o pixel
-					color <= "010"; -- verde
+					if(click(0) = '1') then
+							color <= "011"; -- cyan
+						else 
+							color <= "010"; -- verde
+						end if;
 					
 				elsif ((im = i - 1 and jm = j) or (jm = j - 1 and im = i)) then
 					xaux := jm * 6 + 35;
 					yaux := im * 8 + 17;
 					
 					if((xaux = col-1) or yaux = line-1) then
-						color <= "010"; -- vermelho
+						if(click(0) = '1') then
+							color <= "011"; -- cyan
+						else 
+							color <= "010"; -- verde
+						end if;
 					else
 						color <= "000";
 					end if;
@@ -295,6 +305,10 @@ begin  -- comportamento
 					color <= "000";
 				end if;
 			else
+				
+				
+				
+				
 				color <= "110";
 			end if;
 		else
