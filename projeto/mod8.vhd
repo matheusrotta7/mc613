@@ -49,6 +49,7 @@ begin
 				address_out <= -1;
 			else
 				address_out <= aux;
+			end if;
 				
 		end if;
 	end process;
