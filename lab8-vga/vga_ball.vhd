@@ -274,12 +274,14 @@ begin  -- comportamento
 				jm :=  (to_integer(unsigned(new_mouse_data(15 downto 8))) - 30 ) / 6;
 				
 				if (im = i and jm =j) then
+					-- mouse no msm quadradinho que o pixel
 					color <= "010"; -- verde
-				elsif (im = i - 1 or jm = j - 1) then
+					
+				elsif ((im = i - 1 and jm = j) or (jm = j - 1 and im = i)) then
 					xaux := jm * 6 + 35;
 					yaux := im * 8 + 17;
 					
-					if((xaux = col-1) and ) or yaux = line-1) then
+					if((xaux = col-1) or yaux = line-1) then
 						color <= "100"; -- verde
 					else
 						color <= "000";
