@@ -32,7 +32,7 @@ use ieee.numeric_std.all;
 entity vga_ball is
   port (    
 	memo_word					: in std_logic_vector(6 downto 0);
-	address						: out integer range 0 to 63;
+	memo_address						: out integer range 0 to 63;
 	sw								: in std_logic_vector(9 downto 0);
 		ledr 	:		out	std_logic_vector (9 downto 0);		--	led red[9:0]
     CLOCK_50                  : in  std_logic;
@@ -265,6 +265,10 @@ begin  -- comportamento
 
   variable xaux, yaux : integer :=0;
   variable im, jm : integer := 0;
+  variable u_x, u_y : integer := 0;
+  
+  
+  
   begin
 	if CLOCK_50'event and CLOCK_50 = '1' then  -- rising clock edge
       -- o contador de linha só incrementa quando o contador de colunas
@@ -292,7 +296,7 @@ begin  -- comportamento
 					xaux := jm * 6 + 35;
 					yaux := im * 8 + 17;
 					
-					if((xaux = col-1) or yaux = line-1) then
+					if(xaux = col-1 or yaux = line-1) then
 						if(click(0) = '1') then
 							color <= "011"; -- cyan
 						else 
@@ -306,10 +310,201 @@ begin  -- comportamento
 				end if;
 			else
 				
+				u_x := (col - j*6) mod 5;
+				u_y := (line - i*8) mod 7;
 				
+				if (memo_word(6) = '1') then 
+					color <= "110";
+				elsif (memo_word(5) = '1') then
+				-- bomba
+					if (u_x = 0 or u_x = 4) then 
+						if (u_y mod 2 = 0) then
+							color <= "110"; -- amarelo
+						else
+							color <= "100"; -- vermelho
+						end if;
+					elsif (u_x = 1 or u_x = 3) then
+						if (u_y = 0 or u_y =1 or u_y = 5 or u_y = 6) then
+							color <= "110"; -- amarelo
+						else
+							color <= "100"; -- vermelho
+						end if;
+					else
+						if (u_y = 0 or u_y = 6) then
+							color <= "110"; -- amarelo
+						else
+							color <= "100"; -- vermelho
+						end if;
+					end if;
+				elsif (memo_word(4) = '1') then
 				
+					if (u_x = 0 or u_x = 4) then 
+						color <= "110"; -- amarelo
+					
+					elsif (u_x = 1) then
+						if (u_y = 3) then
+							color <= "000"; -- preto
+						else
+							color <= "110"; -- amarelo
+						end if;
+					
+					elsif (u_x = 2) then
+						if (u_y = 2 or u_y = 3) then
+							color <= "000";
+						else
+							color <= "110";
+						end if;
+					else
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					end if;
 				
-				color <= "110";
+				elsif (memo_word(3 downto 0) = "0000") then	
+					color <= "110";
+				elsif (memo_word(3 downto 0) = "0001") then
+					if (u_x = 3) then 
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						color <= "110";
+					end if;
+				
+				elsif (memo_word(3 downto 0) = "0010") then
+					if (u_x = 0 or u_x = 4) then
+						color <= "110";
+					elsif (u_x = 1) then
+						if (u_y = 0 or u_y = 2 or u_y = 6) then
+							color <= "110";
+						else 
+							color<= "000";
+						end if;
+					elsif (u_x = 2) then
+						if (u_y mod 2 = 0) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						if (u_y = 0 or u_y = 4 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					end if;
+				elsif (memo_word(3 downto 0) = "0011") then
+					if (u_x = 0 or u_x = 4) then
+						color <= "110";
+					elsif (u_x = 1 or u_x = 2) then
+						if (u_y mod 2 = 0) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					end if;
+				elsif (memo_word(3 downto 0) = "0100") then
+					if (u_x = 0 or u_x = 4) then
+						color <= "110";
+					elsif (u_x = 1) then
+						if (u_y = 1 or u_y = 2 or u_y = 3) then
+							color <= "000";
+						else
+							color <= "110";
+						end if;
+					elsif (u_x = 2) then
+						if (u_x = 3) then
+							color <= "000";
+						else
+							color <= "110";
+						end if;
+					else 
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					end if;
+				
+				elsif (memo_word(3 downto 0) = "0101") then
+				
+					if (u_x = 0 or u_x = 4) then
+						color <= "110";
+					elsif (u_x = 1) then
+						if (u_y = 0 or u_y = 4 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					elsif (u_x = 2) then
+						if (u_y mod 2 = 0) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						if (u_y = 0 or u_y = 2 or u_y = 6) then
+							color <= "110";
+						else 
+							color<= "000";
+						end if;
+					end if;
+				
+				elsif (memo_word(3 downto 0) = "0110") then
+				
+					if (u_x = 0 or u_x = 4) then
+						color <= "110";
+					elsif (u_x = 1) then
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					elsif (u_x = 2) then
+						if (u_y mod 2 = 0) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						if (u_y = 0 or u_y = 2 or u_y = 6) then
+							color <= "110";
+						else 
+							color<= "000";
+						end if;
+					end if;
+				elsif (memo_word(3 downto 0) = "0111") then
+					if (u_x = 1 or u_x = 2) then
+						if (u_y = 1) then
+							color <= "000";
+						else
+							color <= "110";
+						end if;
+					elsif (u_x = 3) then 
+						if (u_y = 0 or u_y = 6) then
+							color <= "110";
+						else
+							color <= "000";
+						end if;
+					else 
+						color <= "110";
+					end if;
+					
+				else
+					color <= "001";
+				
+				end if;
+				
 			end if;
 		else
 			color <= "000";
